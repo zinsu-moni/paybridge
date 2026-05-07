@@ -1,10 +1,8 @@
 import logging
-from typing import Any, Dict, Optional
-from venv import logger
-from .model.base import PayBrigde
-from pydantic import ConfigDict, Field
+from model.base import PayBrigde
+from pydantic import ConfigDict
 
-logging = logging.getLogger("PayBridge")
+logger = logging.getLogger("PayBridge")
 
 class SDKConfig(PayBrigde):
     model_config = ConfigDict(arbitrary_types_allowed=True)

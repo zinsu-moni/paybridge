@@ -24,7 +24,7 @@ class PaymentResponse(PayBrigde):
     provider_raw_response: Optional[dict[str, Any]] = None
     metadata: Optional[dict[str, Any]] = None
 
-class ChargesRequest(PayBrigde):
+class ChargeRequest(PayBrigde):
     amount: float = Field(..., gt=0, description="Amount must be greater than 0")
     currency: str = Field(default="NGN", min_length=3, max_length=3)
     email: str
@@ -44,5 +44,8 @@ class ChargesRequest(PayBrigde):
         if "@" not in v:
             raise ValueError("Invalid email address")
         return v
+
+
+ChargesRequest = ChargeRequest
 
 

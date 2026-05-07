@@ -1,15 +1,14 @@
-from pydantic import BaaseModel, ConfigDict
-from datetime import datetime
 from typing import Optional, Any
+from pydantic import BaseModel, ConfigDict
 
-class PayBrigde(BaaseModel):
+class PayBrigde(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
         from_attributes=True
     )
 
-class Money(BaaseModel):
+class Money(BaseModel):
     amount: float
     currency: str
 

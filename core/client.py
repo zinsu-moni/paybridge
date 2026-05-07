@@ -1,17 +1,16 @@
 from typing import Type, TypeVar, Optional, Any, Dict
-from .providers.base import BaseProvider
-from .providers.paystack import PaystackProvider
+from provider.base import BaseProvider
+from provider.paystack import PaystackProvider
 # from .providers.flutterwave import FlutterwaveProvider
 # from .providers.monnify import MonnifyProvider
-from .exceptions import ConfigurationError, ValidationError
-from .models import PaymentResponse, ChargeRequest
-from .core.config import settings, logger
+from expections.base import ConfigurationError, ValidationError
+from model.payments import PaymentResponse, ChargeRequest
+from core.config import settings, logger
 from pydantic import ValidationError as PydanticValidationError
-from .utils.masking import mask_string
 
 T = TypeVar("T", bound=BaseProvider)
 
-class UniPay:
+class PayBridge:
     _PROVIDER_REGISTRY: Dict[str, Type[BaseProvider]] = {
         "paystack": PaystackProvider,
         # "flutterwave": FlutterwaveProvider,
