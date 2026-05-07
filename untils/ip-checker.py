@@ -1,6 +1,6 @@
 from typing import List, Optional
 import httpx
-from unipay.core.config import logger
+from core.config import logger
 
 PROVIDER_IPS = {
     "paystack": [
