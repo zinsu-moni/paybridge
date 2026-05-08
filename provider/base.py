@@ -35,4 +35,8 @@ class BaseProvider(ABC):
             "Content-Type": "application/json",
             "User-Agent": settings.user_agent
         }
+    async def _request_with_retry(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        max_retries = settings.max_retries
+        backoff_factor = settings.retry_backoff_factor
+    
 
