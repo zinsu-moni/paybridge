@@ -83,5 +83,19 @@ class BaseProvider(ABC):
     def validate_webhook(self, payload: Dict[str, Any], signature: str) -> bool:
         logger.info(f"[{self.provider_name}] Validating webhook with payload: {mask_sensitive_data(payload)}")
         return False
+    
 
+    async def charge(self, request: ChargeRequest) -> PaymentResponse:
+        return await self.initialize_payment(request)
 
+    async def verify_transaction(self, transaction_id: str) -> PaymentResponse:
+        return await self.verify_payment(transaction_id)
+
+    async def close(self):
+        await self._client.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
