@@ -3,6 +3,7 @@ import time
 from abc import ABC, abstractclassmethod
 from typing import Any, Dict, List, Optional, TypeVar
 import httpx
+from unipay import ChargeRequest
 from model import PaymentResponse, PaymentStatus
 from core.config import settings, logger
 from expections import NetworkError
@@ -60,5 +61,27 @@ class BaseProvider(ABC):
                 await asyncio.sleep(sleep_time)
         
         raise NetworkError("Request failed")
+    
+
+    @abstractclassmethod
+    async def initalize_payment(self, request: ChargeRequest) -> PaymentResponse:
+        logger.info(f"[{self.provider_name}] Initializing payment for request: {request.reference} for {request.email}")
+        return None
+    
+    @abstractclassmethod
+    async def verify_payment(self, reference: str) -> PaymentStatus:
+        logger.info(f"[{self.provider_name}] Verifying payment for reference: {reference}")
+        return None
+    
+    @abstractclassmethod
+    async def refund(self, transaction_id: str, amount: Optional[float] = None) -> PaymentResponse:
+        log_amount = f"{amount:.2f}" if amount else ""
+        logger.info(f"[{self.provider_name}] Refunding payment for transaction: {transaction_id}{log_amount}")
+        return None
+    
+    @abstractclassmethod
+    def validate_webhook(self, payload: Dict[str, Any], signature: str) -> bool:
+        logger.info(f"[{self.provider_name}] Validating webhook with payload: {mask_sensitive_data(payload)}")
+        return False
 
 
