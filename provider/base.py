@@ -6,6 +6,8 @@ import httpx
 from model import PaymentResponse, PaymentStatus
 from core.config import settings, logger
 from expections import NetworkError
+from utils.masking import mask_sensitive_data
+
 
 T =  TypeVar("T")
 
@@ -31,12 +33,32 @@ class BaseProvider(ABC):
 
     def _get_dafault_headers(self) -> Dict[str, str]:
         return {
-            "Authorization": f"Bearer {self.secret_key}"
+            "Authorization": f"Bearer {self.secret_key}",
             "Content-Type": "application/json",
             "User-Agent": settings.user_agent
         }
+
     async def _request_with_retry(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         max_retries = settings.max_retries
         backoff_factor = settings.retry_backoff_factor
-    
+        masked_kwargs = mask_sensitive_data(kwargs, mask_pii=True)
+
+
+        for attempt in range(max_retries + 1):
+            try:
+                logger.debug(f"[{self.provider_name}] {method} {url} - Attempt {attempt + 1} - Payload: {masked_kwargs.get('json') or masked_kwargs.get('params') or 'None'}")
+                response = await self._client.request(method, url, **kwargs)
+                return response
+            except (httpx.NetworkError, httpx.TimeoutException) as e:
+                last_exception = e
+                if attempt == max_retries:
+                    logger.error(f"[{self.provider_name}] Max retries reached for {url}")
+                    raise NetworkError(f"Network failure after {max_retries} retries: {str(e)}") from e
+                
+                sleep_time = backoff_factor * (2 ** attempt)
+                logger.warning(f"[{self.provider_name}] Network error: {str(e)}. Retrying in {sleep_time}s...")
+                await asyncio.sleep(sleep_time)
+        
+        raise NetworkError("Request failed")
+
 
