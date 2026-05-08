@@ -29,5 +29,10 @@ class BaseProvider(ABC):
             timeout=self.timeout
         )
 
-
+    def _get_dafault_headers(self) -> Dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.secret_key}"
+            "Content-Type": "application/json",
+            "User-Agent": settings.user_agent
+        }
 
