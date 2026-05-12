@@ -3,7 +3,7 @@ import time
 from abc import ABC, abstractclassmethod
 from typing import Any, Dict, List, Optional, TypeVar
 import httpx
-from unipay import ChargeRequest
+from model import ChargeRequest
 from model import PaymentResponse, PaymentStatus
 from core.config import settings, logger
 from expections import NetworkError

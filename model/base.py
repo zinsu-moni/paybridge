@@ -20,4 +20,6 @@ class Customer(PayBrigde):
     last_name: Optional[str] = None
     metadata: Optional[dict[str, Any]] = None
 
+UniPayBaseModel = PayBrigde
+
     

@@ -23,3 +23,35 @@ class PayBridgeError(Exception):
         if self.status_code:
             base_msg += f" [HTTP {self.status_code}]"
         return base_msg
+
+
+class UniPayError(PayBridgeError):
+    pass
+
+
+class AuthenticationError(UniPayError):
+    pass
+
+
+class ValidationError(UniPayError):
+    pass
+
+
+class ProviderError(UniPayError):
+    pass
+
+
+class RateLimitError(UniPayError):
+    pass
+
+
+class NetworkError(UniPayError):
+    pass
+
+
+class ConfigurationError(UniPayError):
+    pass
+
+
+class ResourceNotFoundError(UniPayError):
+    pass
