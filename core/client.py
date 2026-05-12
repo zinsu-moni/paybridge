@@ -134,6 +134,18 @@ class PayBridge:
         logger.info(f"[{provider_instance.provider_name}] Verifying payment: {reference}")
         return await provider_instance.verify_payment(reference)
 
+    async def refund(
+        self,
+        transaction_id: str,
+        amount: Optional[float] = None,
+        currency: Optional[str] = None,
+        provider: Optional[str] = None,
+    ) -> PaymentResponse:
+        provider_instance = self.get_provider(provider)
+        log_amount = f" for amount {amount:.2f} {currency}" if amount else ""
+        logger.info(f"[{provider_instance.provider_name}] Refunding payment: {transaction_id}{log_amount}")
+        return await provider_instance.refund(transaction_id, amount, currency)
+
     async def close_all(self):
         for provider in self._providers.values():
             await provider.close()

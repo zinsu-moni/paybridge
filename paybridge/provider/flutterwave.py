@@ -5,7 +5,7 @@ from ..utils import to_minor_units, handle_http_errors, verify_paystack_signatur
 from ..core.config import logger
 
 class FlutterwaveProvider(BaseProvider):
-    providr_name = "flutterwave"
+    provider_name = "flutterwave"
     base_url = "https://api.flutterwave.com/v3"
 
 

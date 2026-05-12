@@ -1,8 +1,8 @@
 from typing import Type, TypeVar, Optional, Any, Dict
 from ..provider.base import BaseProvider
 from ..provider.paystack import PaystackProvider
-# from ..provider.flutterwave import FlutterwaveProvider
-# from ..provider.monnify import MonnifyProvider
+from ..provider.flutterwave import FlutterwaveProvider
+from ..provider.monnify import MonnifyProvider
 from ..expections.base import ConfigurationError, ValidationError
 from ..model.payments import PaymentResponse, ChargeRequest
 from .config import settings, logger
@@ -13,8 +13,8 @@ T = TypeVar("T", bound=BaseProvider)
 class PayBridge:
     _PROVIDER_REGISTRY: Dict[str, Type[BaseProvider]] = {
         "paystack": PaystackProvider,
-        # "flutterwave": FlutterwaveProvider,
-        # "monnify": MonnifyProvider,
+        "flutterwave": FlutterwaveProvider,
+        "monnify": MonnifyProvider,
     }
 
     def __init__(
@@ -133,6 +133,18 @@ class PayBridge:
         provider_instance = self.get_provider(provider)
         logger.info(f"[{provider_instance.provider_name}] Verifying payment: {reference}")
         return await provider_instance.verify_payment(reference)
+
+    async def refund(
+        self,
+        transaction_id: str,
+        amount: Optional[float] = None,
+        currency: Optional[str] = None,
+        provider: Optional[str] = None,
+    ) -> PaymentResponse:
+        provider_instance = self.get_provider(provider)
+        log_amount = f" for amount {amount:.2f} {currency}" if amount else ""
+        logger.info(f"[{provider_instance.provider_name}] Refunding payment: {transaction_id}{log_amount}")
+        return await provider_instance.refund(transaction_id, amount, currency)
 
     async def close_all(self):
         for provider in self._providers.values():
