@@ -2,7 +2,7 @@ from typing import Optional, Any
 from provider.base import BaseProvider
 from model import PaymentResponse, ChargeRequest, PaymentStatus
 from utils import to_minor_units, handle_http_errors, verify_paystack_signature
-from unipay.core.config import logger
+from core.config import logger
 
 class PaystackProvider(BaseProvider):
     provider_name = "paystack"
