@@ -1,6 +1,6 @@
 import asyncio
 import time 
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, TypeVar
 import httpx
 from model import ChargeRequest
@@ -32,7 +32,7 @@ class BaseProvider(ABC):
             timeout=self.timeout
         )
 
-    def _get_dafault_headers(self) -> Dict[str, str]:
+    def _get_default_headers(self) -> Dict[str, str]:
         return {
             "Authorization": f"Bearer {self.secret_key}",
             "Content-Type": "application/json",
@@ -63,23 +63,21 @@ class BaseProvider(ABC):
         raise NetworkError("Request failed")
     
 
-    @abstractclassmethod
-    async def initalize_payment(self, request: ChargeRequest) -> PaymentResponse:
+    async def initialize_payment(self, request: ChargeRequest) -> PaymentResponse:
+        """Initialize a payment. Override in concrete providers if needed."""
         logger.info(f"[{self.provider_name}] Initializing payment for request: {request.reference} for {request.email}")
         return None
     
-    @abstractclassmethod
-    async def verify_payment(self, reference: str) -> PaymentStatus:
+    async def verify_payment(self, reference: str) -> PaymentResponse:
+        """Verify a payment by reference. Override in concrete providers if needed."""
         logger.info(f"[{self.provider_name}] Verifying payment for reference: {reference}")
         return None
     
-    @abstractclassmethod
-    async def refund(self, transaction_id: str, amount: Optional[float] = None) -> PaymentResponse:
+    async def refund(self, transaction_id: str, amount: Optional[float] = None, currency: Optional[str] = None) -> PaymentResponse:
         log_amount = f"{amount:.2f}" if amount else ""
         logger.info(f"[{self.provider_name}] Refunding payment for transaction: {transaction_id}{log_amount}")
         return None
     
-    @abstractclassmethod
     def validate_webhook(self, payload: Dict[str, Any], signature: str) -> bool:
         logger.info(f"[{self.provider_name}] Validating webhook with payload: {mask_sensitive_data(payload)}")
         return False

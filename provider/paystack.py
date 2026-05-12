@@ -75,7 +75,7 @@ class PaystackProvider(BaseProvider):
         
         payload = {"transaction": transaction_id}
         if amount:
-            payload["amount"] = to_minor_units(amount, currency or self.currency)
+            payload["amount"] = to_minor_units(amount, currency or "NGN")
 
         response = await self._request_with_retry(
             "POST",
