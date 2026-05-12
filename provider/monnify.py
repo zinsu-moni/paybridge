@@ -3,6 +3,7 @@ from provider.base import BaseProvider
 from model import PaymentResponse, ChargeRequest, PaymentStatus
 from utils import to_minor_units, handle_http_errors, verify_paystack_signature
 from core.config import logger
+import base64
 
 
 class MonnifyProvider(BaseProvider):
