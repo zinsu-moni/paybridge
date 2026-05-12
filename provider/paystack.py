@@ -70,12 +70,12 @@ class PaystackProvider(BaseProvider):
             provider_raw_response=response.json()
         )
 
-    async def refund(self, transaction_id: str, amount: Optional[float] = None) -> PaymentResponse:
-        await super().refund(transaction_id, amount)
+    async def refund(self, transaction_id: str, amount: Optional[float] = None, currency: Optional[str] = None) -> PaymentResponse:
+        await super().refund(transaction_id, amount, currency)
         
         payload = {"transaction": transaction_id}
         if amount:
-            payload["amount"] = to_minor_units(amount, "NGN")
+            payload["amount"] = to_minor_units(amount, currency or self.currency)
 
         response = await self._request_with_retry(
             "POST",

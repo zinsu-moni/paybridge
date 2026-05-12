@@ -50,7 +50,7 @@ class FlutterwaveProvider(BaseProvider):
     async def verify_payment(self, reference: str) -> PaymentResponse:
       
         await super().verify_payment(reference)
-        
+
         response = await self._request_with_retry(
             "GET", 
             f"{self.base_url}/transactions/verify_by_reference?tx_ref={reference}"
@@ -75,3 +75,34 @@ class FlutterwaveProvider(BaseProvider):
             message=data.get("processor_response"),
             provider_raw_response=response.json()
         )
+
+    async def refund(self, transaction_id: str, amount: Optional[float] = None, currency: Optional[str] = None) -> PaymentResponse:
+        await super().refund(transaction_id, amount, currency)
+        
+        payload = {"transaction_id": transaction_id}
+        if amount:
+            payload["amount"] = to_minor_units(amount, currency or self.currency)
+
+        response = await self._request_with_retry(
+            "POST",
+            f"{self.base_url}/refunds", 
+            json=payload
+        )
+        await handle_http_errors(response)
+        
+        data = response.json()["data"]
+        return PaymentResponse(
+            transaction_id=str(data["id"]),
+            reference=data["tx_ref"],
+            status=PaymentStatus.REFUNDED,
+            amount=data["amount"],
+            currency=data["currency"],
+            provider=self.provider_name,
+            message=data.get("processor_response"),
+            provider_raw_response=response.json()
+        )
+
+        def validate_webhook(self, payload: dict[str, Any], signature: str) -> bool:
+            super().validate_webhook(payload, signature)
+            return verify_paystack_signature(payload, signature, self.secret_key)
+        
