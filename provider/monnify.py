@@ -85,7 +85,7 @@ class MonnifyProvider(BaseProvider):
 
     async def verify_payment(self, reference: str) -> PaymentResponse:
 
-        await super().verify_payment(refrence)
+        await super().verify_payment(reference)
 
         response = await self._request_with_retry(
             "GET", 
