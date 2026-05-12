@@ -1,10 +1,57 @@
-/.DS_Store
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-*.env
-.env.*
-venv/ 
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+
+# Virtual Environments
+venv/
 env/
+ENV/
+.venv
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Linting
+.mypy_cache/
+.ruff_cache/
+.flake8
+
+# Logs
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Misc
+.DS_Store
+*.bak
+.temp/
