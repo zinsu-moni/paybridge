@@ -31,8 +31,7 @@ class FlutterwaveProvider(BaseProvider):
         response = await self._request_with_retry(
             "POST",
             f"{self.base_url}/payments",
-            json=payload,
-            idempotency_key=request.reference
+            json=payload
         )
         await handle_http_errors(response)
         

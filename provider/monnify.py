@@ -68,8 +68,7 @@ class MonnifyProvider(BaseProvider):
         response = await self._request_with_retry(
             "POST",
             f"{self.base_url}/merchant/transactions/init-transaction",
-            json={k: v for k, v in payload.items() if v is not None},
-            idempotency_key=request.reference
+            json={k: v for k, v in payload.items() if v is not None}
         )
         await handle_http_errors(response)
         
