@@ -88,17 +88,33 @@ class FlutterwaveProvider(BaseProvider):
             json=payload
         )
         await handle_http_errors(response)
-        
-        data = response.json()["data"]
+
+        raw_response = response.text.strip()
+        response_data: dict[str, Any] = {}
+        if raw_response:
+            try:
+                response_data = response.json()
+            except ValueError:
+                response_data = {}
+
+        data = response_data.get("data", {})
+        refund_status = str(data.get("status", "processing")).lower()
+        status_map = {
+            "successful": PaymentStatus.REFUNDED,
+            "completed": PaymentStatus.REFUNDED,
+            "success": PaymentStatus.REFUNDED,
+            "pending": PaymentStatus.PROCESSING,
+            "processing": PaymentStatus.PROCESSING,
+        }
         return PaymentResponse(
-            transaction_id=str(data["id"]),
-            reference=data["tx_ref"],
-            status=PaymentStatus.REFUNDED,
-            amount=data["amount"],
-            currency=data["currency"],
+            transaction_id=str(data.get("id", transaction_id)),
+            reference=data.get("tx_ref", transaction_id),
+            status=status_map.get(refund_status, PaymentStatus.PROCESSING),
+            amount=data.get("amount", amount or 0.0),
+            currency=data.get("currency", currency or "NGN"),
             provider=self.provider_name,
-            message=data.get("processor_response"),
-            provider_raw_response=response.json()
+            message=data.get("processor_response") or (raw_response or None),
+            provider_raw_response=response_data or {"raw_response": raw_response}
         )
 
         def validate_webhook(self, payload: dict[str, Any], signature: str) -> bool:
