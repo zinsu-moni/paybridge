@@ -8,38 +8,70 @@ class FlutterwaveProvider(BaseProvider):
     providr_name = "flutterwave"
     base_url = "https://api.flutterwave.com/v3"
 
+
     async def initialize_payment(self, request: ChargeRequest) -> PaymentResponse:
+       
         await super().initialize_payment(request)
         
         payload = {
             "tx_ref": request.reference,
-            "amount": to_minor_units(request.amount, request.currency),
+            "amount": request.amount,
             "currency": request.currency,
-            "redirect_url": request.callback_url,
-            "payment_options": "card, mobilemoney, ussd",
+            "redirect_url": request.callback_url or "https://example.com/callback",
             "customer": {
                 "email": request.email,
-                "name": request.metadata.get("name")
+                "phonenumber": request.phone,
             },
-            "meta": request.metadata
+            "meta": request.metadata,
+            "customizations": {
+                "title": "UniPay Payment",
+            }
         }
 
-        logger.debug(f"[{self.provider_name}] Initializing transaction: {request.reference}")
-        
         response = await self._request_with_retry(
             "POST",
             f"{self.base_url}/payments",
-            json={k: v for k, v in payload.items() if v is not None}
+            json=payload,
+            idempotency_key=request.reference
         )
         await handle_http_errors(response)
         
         data = response.json()["data"]
         return PaymentResponse(
             checkout_url=data["link"],
-            reference=data["tx_ref"],
+            reference=request.reference,
             status=PaymentStatus.PENDING,
             amount=request.amount,
             currency=request.currency,
             provider=self.provider_name,
+            provider_raw_response=response.json()
+        )
+
+    async def verify_payment(self, reference: str) -> PaymentResponse:
+      
+        await super().verify_payment(reference)
+        
+        response = await self._request_with_retry(
+            "GET", 
+            f"{self.base_url}/transactions/verify_by_reference?tx_ref={reference}"
+        )
+        await handle_http_errors(response)
+        
+        data = response.json()["data"]
+        status_map = {
+            "successful": PaymentStatus.SUCCESSFUL,
+            "failed": PaymentStatus.FAILED,
+            "cancelled": PaymentStatus.CANCELLED,
+            "pending": PaymentStatus.PENDING,
+        }
+        
+        return PaymentResponse(
+            transaction_id=str(data["id"]),
+            reference=data["tx_ref"],
+            status=status_map.get(data["status"].lower(), PaymentStatus.PROCESSING),
+            amount=data["amount"],
+            currency=data["currency"],
+            provider=self.provider_name,
+            message=data.get("processor_response"),
             provider_raw_response=response.json()
         )
