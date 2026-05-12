@@ -143,3 +143,4 @@ class MonnifyProvider(BaseProvider):
     def validate_webhook(self, payload: dict[str, Any], signature: str) -> bool:
         super().validate_webhook(payload, signature)
         return verify_paystack_signature(payload, signature, self.secret_key)
+    return verify_monnify_signature(payload, signature, self.secret_key)
