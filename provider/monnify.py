@@ -8,25 +8,26 @@ import base64
 
 class MonnifyProvider(BaseProvider):
     provider_name = "monnify"
-    base_url = "https://api.monnify.com/api/v1"
+    base_url = "https://sandbox.monnify.com/api/v1"
 
     def __init__(
         self, 
         secret_key: str, 
         public_key: Optional[str] = None, 
         monnify_secret: Optional[str] = None, 
+        api_key: Optional[str] = None,
         base_url: Optional[str] = None, 
         **kwargs: Any
     ):
         super().__init__(secret_key, public_key, base_url, **kwargs)
-        self.monnify_secret = monnify_secret
+        self.monnify_secret = monnify_secret or api_key
         self._access_token: Optional[str] = None
 
     async def _get_access_token(self) -> str:
         if self._access_token:
             return self._access_token
 
-        auth_str = f"{self.secret_key}:{self.monnify_secret}"
+        auth_str = f"{self.monnify_secret}:{self.secret_key}"
         encoded_auth = base64.b64encode(auth_str.encode()).decode()
         
         response = await self._client.post(
