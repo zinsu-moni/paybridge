@@ -6,8 +6,10 @@ import httpx
 from ..model import ChargeRequest
 from ..model import PaymentResponse, PaymentStatus
 from ..core.config import settings, logger
-from ..expections import NetworkError
+from ..expections import NetworkError, RateLimitError
 from ..utils.masking import mask_sensitive_data
+from ..utils.circuit_breaker import CircuitBreaker
+from ..utils.idempotency import IdempotencyTracker
 
 
 T =  TypeVar("T")
@@ -31,6 +33,21 @@ class BaseProvider(ABC):
             headers=self._get_default_headers(),
             timeout=self.timeout
         )
+        
+        # Initialize circuit breaker
+        if settings.circuit_breaker_enabled:
+            self._circuit_breaker = CircuitBreaker(
+                failure_threshold=settings.circuit_breaker_failure_threshold,
+                recovery_timeout=settings.circuit_breaker_recovery_timeout,
+                success_threshold=settings.circuit_breaker_success_threshold,
+            )
+        else:
+            self._circuit_breaker = None
+        
+        # Initialize idempotency tracker
+        self._idempotency_tracker = IdempotencyTracker(
+            ttl_seconds=settings.idempotency_ttl_seconds
+        )
 
     def _get_default_headers(self) -> Dict[str, str]:
         return {
@@ -39,21 +56,69 @@ class BaseProvider(ABC):
             "User-Agent": settings.user_agent
         }
 
-    async def _request_with_retry(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+    async def _request_with_retry(self, method: str, url: str, idempotency_key: Optional[str] = None, **kwargs: Any) -> httpx.Response:
         max_retries = settings.max_retries
         backoff_factor = settings.retry_backoff_factor
         masked_kwargs = mask_sensitive_data(kwargs, mask_pii=True)
-
+        
+        # Generate idempotency key if not provided
+        if idempotency_key is None:
+            idempotency_key = self._idempotency_tracker.generate_key()
+        
+        # Check circuit breaker
+        if self._circuit_breaker and not self._circuit_breaker.can_attempt_request(self.provider_name):
+            logger.error(f"[{self.provider_name}] Circuit breaker is OPEN. Rejecting request to {url}")
+            raise NetworkError(
+                f"Provider {self.provider_name} is temporarily unavailable (circuit breaker open)"
+            )
+        
+        # Check for cached response from previous request with same idempotency key
+        cached_response = self._idempotency_tracker.get_cached_response(idempotency_key)
+        if cached_response is not None:
+            return cached_response
+        
+        # Start tracking this request
+        is_new_request = self._idempotency_tracker.start_request(
+            idempotency_key, self.provider_name, url
+        )
 
         for attempt in range(max_retries + 1):
             try:
                 logger.debug(f"[{self.provider_name}] {method} {url} - Attempt {attempt + 1} - Payload: {masked_kwargs.get('json') or masked_kwargs.get('params') or 'None'}")
                 response = await self._client.request(method, url, **kwargs)
+                
+                # Handle 429 rate limit with exponential backoff
+                if response.status_code == 429:
+                    if attempt < settings.rate_limit_max_retries:
+                        sleep_time = settings.rate_limit_backoff_factor * (2 ** attempt)
+                        logger.warning(
+                            f"[{self.provider_name}] Rate limited (429). Retrying in {sleep_time}s... "
+                            f"(Attempt {attempt + 1}/{settings.rate_limit_max_retries})"
+                        )
+                        await asyncio.sleep(sleep_time)
+                        continue
+                    else:
+                        logger.error(
+                            f"[{self.provider_name}] Rate limited (429) - max retries ({settings.rate_limit_max_retries}) exceeded"
+                        )
+                        self._idempotency_tracker.record_error(idempotency_key, RateLimitError("Rate limit exceeded"))
+                        if self._circuit_breaker:
+                            self._circuit_breaker.record_failure(self.provider_name)
+                        return response
+                
+                # Success - record it
+                self._idempotency_tracker.record_response(idempotency_key, response)
+                if self._circuit_breaker:
+                    self._circuit_breaker.record_success(self.provider_name)
                 return response
+                
             except (httpx.NetworkError, httpx.TimeoutException) as e:
                 last_exception = e
                 if attempt == max_retries:
                     logger.error(f"[{self.provider_name}] Max retries reached for {url}")
+                    self._idempotency_tracker.record_error(idempotency_key, e)
+                    if self._circuit_breaker:
+                        self._circuit_breaker.record_failure(self.provider_name)
                     raise NetworkError(f"Network failure after {max_retries} retries: {str(e)}") from e
                 
                 sleep_time = backoff_factor * (2 ** attempt)

@@ -16,3 +16,8 @@ dependencies = [
 [tool.setuptools]
 include-package-data = true
 packages = ["paybridge"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["test_error_handling.py"]
+addopts = "-v --tb=short"

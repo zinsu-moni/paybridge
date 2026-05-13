@@ -11,6 +11,20 @@ class SDKConfig(PayBrigde):
     default_timeout: float = 30.0
     max_retries: int = 3
     retry_backoff_factor: float = 0.5
+    
+    # Rate limit (429) backoff settings
+    rate_limit_max_retries: int = 5
+    rate_limit_backoff_factor: float = 1.0  # Start with 1s, exponential growth
+    
+    # Circuit breaker settings
+    circuit_breaker_enabled: bool = True
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_recovery_timeout: int = 60  # seconds
+    circuit_breaker_success_threshold: int = 2
+    
+    # Idempotency tracking
+    idempotency_ttl_seconds: int = 3600  # 1 hour
+    
     debug: bool = False
     
     log_level: int = logging.INFO

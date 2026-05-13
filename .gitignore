@@ -40,6 +40,10 @@ ENV/
 htmlcov/
 .tox/
 .hypothesis/
+test_error_handling.py
+test_error_handling_standalone.py
+test/
+*.test.py
 
 # Linting
 .mypy_cache/
