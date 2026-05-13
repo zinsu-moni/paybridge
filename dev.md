@@ -25,7 +25,6 @@ PayBridge provides a single interface for integrating multiple payment gateways 
 
 - Paystack
 - Flutterwave
-- Monnify
 - Stripe
 - More coming soon
 

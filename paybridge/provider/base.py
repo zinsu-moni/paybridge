@@ -74,8 +74,10 @@ class BaseProvider(ABC):
         return None
     
     async def refund(self, transaction_id: str, amount: Optional[float] = None, currency: Optional[str] = None) -> PaymentResponse:
-        log_amount = f"{amount:.2f}" if amount else ""
-        logger.info(f"[{self.provider_name}] Refunding payment for transaction: {transaction_id}{log_amount}")
+        if amount:
+            logger.info(f"[{self.provider_name}] Refunding payment for transaction: {transaction_id} | Amount: {amount:.2f} {currency}")
+        else:
+            logger.info(f"[{self.provider_name}] Refunding payment for transaction: {transaction_id}")
         return None
     
     def validate_webhook(self, payload: Dict[str, Any], signature: str) -> bool:

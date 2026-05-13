@@ -1,8 +1,6 @@
 from typing import Type, TypeVar, Optional, Any, Dict
 from provider.base import BaseProvider
 from provider.paystack import PaystackProvider
-# from .providers.flutterwave import FlutterwaveProvider
-# from .providers.monnify import MonnifyProvider
 from expections.base import ConfigurationError, ValidationError
 from model.payments import PaymentResponse, ChargeRequest
 from core.config import settings, logger
@@ -13,8 +11,6 @@ T = TypeVar("T", bound=BaseProvider)
 class PayBridge:
     _PROVIDER_REGISTRY: Dict[str, Type[BaseProvider]] = {
         "paystack": PaystackProvider,
-        # "flutterwave": FlutterwaveProvider,
-        # "monnify": MonnifyProvider,
     }
 
     def __init__(

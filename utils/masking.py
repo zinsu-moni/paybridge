@@ -4,7 +4,6 @@ from typing import Any, Union, Dict, List
 SENSITIVE_FIELDS = {
     "api_key", "secret_key", "public_key", "token", "access_token", 
     "password", "cvv", "card_number", "pin", "authorization",
-    "monnify_secret"
 }
 
 PII_FIELDS = {

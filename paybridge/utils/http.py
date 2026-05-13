@@ -25,6 +25,7 @@ async def handle_http_errors(response: httpx.Response):
     code = error_data.get("code")
     
     logger.error(f"Provider error: {status_code} - {message} (Code: {code})")
+    logger.error(f"Full error response: {error_data}")
 
     if status_code == 401:
         raise AuthenticationError(message, code=code, status_code=status_code, details=error_data, raw_response=error_data)
