@@ -40,9 +40,20 @@ ENV/
 htmlcov/
 .tox/
 .hypothesis/
+# Specific test files (legacy)
 test_error_handling.py
 test_error_handling_standalone.py
+
+# Demo / misc test files
+testfile.py
+
+# Test directories
 test/
+tests/
+
+# Catch-all patterns for test files
+test_*.py
+*_test.py
 *.test.py
 
 # Linting

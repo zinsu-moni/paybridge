@@ -49,6 +49,16 @@ class NetworkError(UniPayError):
     pass
 
 
+class GatewayUnavailableError(UniPayError):
+    """Raised when all payment gateways are unavailable."""
+    pass
+
+
+class ProviderUnavailable(UniPayError):
+    """Raised when a payment provider is unavailable or all providers have been exhausted."""
+    pass
+
+
 class ConfigurationError(UniPayError):
     pass
 

@@ -2,6 +2,7 @@ from typing import Type, TypeVar, Optional, Any, Dict
 from ..provider.base import BaseProvider
 from ..provider.paystack import PaystackProvider
 from ..provider.flutterwave import FlutterwaveProvider
+from ..gateway.router import GatewayRouter, RoutingStrategy
 from ..expections.base import ConfigurationError, ValidationError
 from ..model.payments import PaymentResponse, ChargeRequest
 from .config import settings, logger
@@ -32,6 +33,8 @@ class PayBridge:
         
         self._providers: dict[str, BaseProvider] = {}
         self._default_provider: Optional[BaseProvider] = None
+        self._router: Optional[GatewayRouter] = None
+        self._router_enabled: bool = False
 
         if provider:
             if not secret_key:
@@ -98,6 +101,54 @@ class PayBridge:
             raise ConfigurationError(f"Provider '{name}' is not registered.")
         return self._providers[name]
 
+    def enable_multi_gateway(
+        self,
+        strategy: RoutingStrategy = RoutingStrategy.PRIORITY,
+        max_retries: int = 2,
+    ) -> GatewayRouter:
+        """
+        Enable multi-gateway routing.
+        
+        Args:
+            strategy: Routing strategy (PRIORITY, ROUND_ROBIN, LEAST_LOADED, RANDOM, WEIGHTED)
+            max_retries: Max fallback attempts per request
+            
+        Returns:
+            Configured GatewayRouter instance
+        """
+        if not self._providers:
+            raise ConfigurationError("No providers registered. Add providers before enabling multi-gateway.")
+        
+        self._router = GatewayRouter(
+            strategy=strategy,
+            max_retries=max_retries,
+        )
+        
+        # Register all providers with the router
+        for name, provider in self._providers.items():
+            priority = 0 if provider == self._default_provider else 1
+            self._router.register_provider(name, provider, priority=priority)
+        
+        self._router_enabled = True
+        logger.info(f"Multi-gateway routing enabled with strategy: {strategy.value}")
+        
+        return self._router
+    
+    def disable_multi_gateway(self) -> None:
+        """Disable multi-gateway routing."""
+        self._router_enabled = False
+        logger.info("Multi-gateway routing disabled")
+    
+    def get_router(self) -> Optional[GatewayRouter]:
+        """Get the GatewayRouter instance."""
+        return self._router
+    
+    def get_gateway_status(self) -> str:
+        """Get status of all gateways."""
+        if not self._router:
+            return "Multi-gateway router not enabled"
+        return self._router.get_provider_status()
+
     async def initialize_payment(
         self, 
         email: str, 
@@ -107,6 +158,27 @@ class PayBridge:
         provider: Optional[str] = None,
         **kwargs: Any
     ) -> PaymentResponse:
+        # Use router if enabled and no specific provider requested
+        if self._router_enabled and provider is None:
+            try:
+                request_data = {
+                    "email": email,
+                    "amount": amount,
+                    "currency": currency,
+                    **kwargs
+                }
+                if reference:
+                    request_data["reference"] = reference
+                    
+                request = ChargeRequest(**request_data)
+            except PydanticValidationError as e:
+                logger.error(f"Validation error: {e}")
+                raise ValidationError(f"Invalid request data: {str(e)}", details=e.errors())
+            
+            logger.info(f"[Router] Initializing payment for {email} ({amount} {currency})")
+            return await self._router.route_request("initialize_payment", request)
+        
+        # Use specified or default provider
         provider_instance = self.get_provider(provider)
         
         try:
@@ -128,6 +200,11 @@ class PayBridge:
         return await provider_instance.initialize_payment(request)
 
     async def verify_payment(self, reference: str, provider: Optional[str] = None) -> PaymentResponse:
+        # Use router if enabled and no specific provider requested
+        if self._router_enabled and provider is None:
+            logger.info(f"[Router] Verifying payment: {reference}")
+            return await self._router.route_request("verify_payment", reference)
+        
         provider_instance = self.get_provider(provider)
         logger.info(f"[{provider_instance.provider_name}] Verifying payment: {reference}")
         return await provider_instance.verify_payment(reference)
@@ -139,6 +216,12 @@ class PayBridge:
         currency: Optional[str] = None,
         provider: Optional[str] = None,
     ) -> PaymentResponse:
+        # Use router if enabled and no specific provider requested
+        if self._router_enabled and provider is None:
+            log_amount = f" for amount {amount:.2f} {currency}" if amount else ""
+            logger.info(f"[Router] Refunding payment: {transaction_id}{log_amount}")
+            return await self._router.route_request("refund", transaction_id, amount, currency)
+        
         provider_instance = self.get_provider(provider)
         log_amount = f" for amount {amount:.2f} {currency}" if amount else ""
         logger.info(f"[{provider_instance.provider_name}] Refunding payment: {transaction_id}{log_amount}")

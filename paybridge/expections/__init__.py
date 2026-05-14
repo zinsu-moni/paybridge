@@ -7,6 +7,8 @@ from .base import (
     NetworkError,
     ConfigurationError,
     ResourceNotFoundError,
+    GatewayUnavailableError,
+    ProviderUnavailable,
 )
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "NetworkError",
     "ConfigurationError",
     "ResourceNotFoundError",
+    "GatewayUnavailableError",
+    "ProviderUnavailable",
 ]
 
 from .base import PayBridgeError
