@@ -25,6 +25,7 @@ class PaystackProvider(BaseProvider):
         response = await self._request_with_retry(
             "POST",
             f"{self.base_url}/transaction/initialize",
+            idempotency_key=request.reference,
             json={k: v for k, v in payload.items() if v is not None}
         )
         await handle_http_errors(response)
@@ -80,6 +81,7 @@ class PaystackProvider(BaseProvider):
         response = await self._request_with_retry(
             "POST",
             f"{self.base_url}/refund", 
+            idempotency_key=transaction_id,
             json=payload
         )
         await handle_http_errors(response)

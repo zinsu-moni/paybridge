@@ -1,5 +1,5 @@
 import asyncio
-import time 
+import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, TypeVar
 import httpx
@@ -23,7 +23,9 @@ class BaseProvider(ABC):
         secret_key: str, 
         public_key: Optional[str] = None, 
         base_url: Optional[str] = None, 
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
+        idempotency_store: Optional[Any] = None,
+        idempotency_storage_path: Optional[str] = None,
     ):
         self.secret_key = secret_key
         self.public_key = public_key
@@ -46,7 +48,9 @@ class BaseProvider(ABC):
         
         # Initialize idempotency tracker
         self._idempotency_tracker = IdempotencyTracker(
-            ttl_seconds=settings.idempotency_ttl_seconds
+            ttl_seconds=settings.idempotency_ttl_seconds,
+            storage=idempotency_store,
+            storage_path=idempotency_storage_path or settings.idempotency_storage_path,
         )
 
     def _get_default_headers(self) -> Dict[str, str]:
@@ -64,6 +68,10 @@ class BaseProvider(ABC):
         # Generate idempotency key if not provided
         if idempotency_key is None:
             idempotency_key = self._idempotency_tracker.generate_key()
+
+        headers = dict(kwargs.get("headers") or {})
+        headers.setdefault("Idempotency-Key", idempotency_key)
+        kwargs["headers"] = headers
         
         # Check circuit breaker
         if self._circuit_breaker and not self._circuit_breaker.can_attempt_request(self.provider_name):
@@ -81,6 +89,14 @@ class BaseProvider(ABC):
         is_new_request = self._idempotency_tracker.start_request(
             idempotency_key, self.provider_name, url
         )
+
+        if not is_new_request:
+            for _ in range(5):
+                await asyncio.sleep(0.2)
+                cached_response = self._idempotency_tracker.get_cached_response(idempotency_key)
+                if cached_response is not None:
+                    return cached_response
+            raise NetworkError(f"Duplicate request already in progress for {self.provider_name}")
 
         for attempt in range(max_retries + 1):
             try:

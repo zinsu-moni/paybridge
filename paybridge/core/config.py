@@ -1,5 +1,7 @@
 import logging
 from ..model.base import PayBrigde
+from typing import Optional
+
 from pydantic import ConfigDict
 
 logger = logging.getLogger("PayBridge")
@@ -24,6 +26,7 @@ class SDKConfig(PayBrigde):
     
     # Idempotency tracking
     idempotency_ttl_seconds: int = 3600  # 1 hour
+    idempotency_storage_path: Optional[str] = None
     
     debug: bool = False
     

@@ -9,7 +9,7 @@ from ..expections.base import (
     ResourceNotFoundError,
     ValidationError,
 )
-from core.config import logger
+from ..core.config import logger
 
 async def handle_http_errors(response: httpx.Response):
     if response.is_success:

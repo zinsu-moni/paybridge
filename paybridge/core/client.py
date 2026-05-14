@@ -7,6 +7,7 @@ from ..expections.base import ConfigurationError, ValidationError
 from ..model.payments import PaymentResponse, ChargeRequest
 from .config import settings, logger
 from pydantic import ValidationError as PydanticValidationError
+from ..utils.idempotency_store import IdempotencyStore
 
 T = TypeVar("T", bound=BaseProvider)
 
@@ -23,6 +24,8 @@ class PayBridge:
         public_key: Optional[str] = None,
         debug: bool = False,
         timeout: Optional[float] = None,
+        idempotency_store: Optional[IdempotencyStore] = None,
+        idempotency_storage_path: Optional[str] = None,
         **kwargs: Any
     ):
         
@@ -35,6 +38,8 @@ class PayBridge:
         self._default_provider: Optional[BaseProvider] = None
         self._router: Optional[GatewayRouter] = None
         self._router_enabled: bool = False
+        self._idempotency_store = idempotency_store
+        self._idempotency_storage_path = idempotency_storage_path
 
         if provider:
             if not secret_key:
@@ -77,6 +82,8 @@ class PayBridge:
         set_as_default: bool = False, 
         **kwargs: Any
     ) -> T:
+        kwargs.setdefault("idempotency_store", self._idempotency_store)
+        kwargs.setdefault("idempotency_storage_path", self._idempotency_storage_path)
         provider = provider_class(
             secret_key=secret_key, 
             public_key=public_key,

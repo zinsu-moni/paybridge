@@ -5,6 +5,11 @@ from .security import (
 )
 from .circuit_breaker import CircuitBreaker, CircuitState
 from .idempotency import IdempotencyTracker
+from .idempotency_store import (
+    FileIdempotencyStore,
+    IdempotencyStore,
+    InMemoryIdempotencyStore,
+)
 
 __all__ = [
     "to_minor_units",
@@ -15,4 +20,7 @@ __all__ = [
     "CircuitBreaker",
     "CircuitState",
     "IdempotencyTracker",
+    "IdempotencyStore",
+    "InMemoryIdempotencyStore",
+    "FileIdempotencyStore",
 ]

@@ -4,18 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paybridge"
-version = "0.1.0"
+version = "0.1.3"
 description = "Unified payment gateway integration for Python"
-readme = "dev.md"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.27",
     "pydantic>=2.0",
 ]
-
-[tool.setuptools]
-include-package-data = true
-packages = ["paybridge"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["paybridge*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
